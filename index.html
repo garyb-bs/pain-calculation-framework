@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BrowserStack QA Financial Risk Calculator</title>
+<link rel="icon" type="image/png" href="images/bs-logo.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <!-- Include jsPDF AutoTable library -->
@@ -38,14 +39,16 @@ header {
 .header-content {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 1rem;
+    justify-content: flex-start;
+    gap: 2rem;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 2rem;
 }
 
 .logo {
     flex-shrink: 0;
+    margin-right: 1rem;
 }
 
 .logo img {
@@ -145,6 +148,36 @@ header::before {
     margin: 0;
     width: 100%;
     height: fit-content;
+}
+
+.chart-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+}
+
+.toggle-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.toggle-btn.active {
+    background: #F48024;
+    color: white;
+    border-color: #F48024;
 }
 
 .results-section {
@@ -331,19 +364,28 @@ tr:last-child td {
     margin: 2rem 0;
 }
 
+/* Export Section */
+.export-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
+    margin-top: 1rem;
+}
+
 /* Export Buttons */
 .export-buttons {
     display: flex;
+    flex-direction: column;
     gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 2rem;
 }
 
 .export-buttons button {
-    flex: 1;
-    min-width: 150px;
+    width: 100%;
     background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
     box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
 }
 
 .export-buttons button:hover {
@@ -424,13 +466,7 @@ tr:last-child td {
         grid-template-columns: 1fr;
     }
     
-    .export-buttons {
-        flex-direction: column;
-    }
-    
-    .export-buttons button {
-        min-width: auto;
-    }
+
     
     #resultsTable {
         font-size: 0.9rem;
@@ -607,12 +643,12 @@ tr:last-child td {
 <header>
     <div class="header-content">
         <div class="logo">
-            <img src="images/bs-logo.png" alt="BrowserStack Icon" width="40" height="40">
+            <img src="images/bs-logo.png" alt="BrowserStack Icon" width="60" height="60">
         </div>
         <div class="header-text">
             <h1>BrowserStack QA Financial Risk Calculator</h1>
             <h2>Estimate potential financial risks from testing inefficiencies</h2>
-            <button class="about-btn" onclick="openAboutModal()">About</button>
+            <button class="about-btn" onclick="openAboutModal()">How It Works</button>
         </div>
     </div>
 </header>
@@ -749,14 +785,20 @@ tr:last-child td {
             </div>
 
             <div class="chart-container">
+                <div class="chart-toggle">
+                    <button class="toggle-btn active" onclick="switchChart('stacked')">Stacked Bar</button>
+                    <button class="toggle-btn" onclick="switchChart('radar')">Radar Chart</button>
+                </div>
                 <canvas id="riskChart"></canvas>
             </div>
+            
+            <div class="export-section">
+                <div class="export-buttons">
+                    <button type="button" onclick="downloadCSV()">Download CSV</button>
+                    <button type="button" onclick="downloadPDF()">Download PDF</button>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="export-buttons">
-        <button type="button" onclick="downloadCSV()">Download CSV</button>
-        <button type="button" onclick="downloadPDF()">Download PDF</button>
     </div>
 </div>
 
@@ -789,17 +831,50 @@ let riskChart = new Chart(document.getElementById('riskChart'), {
     type: 'bar',
     data: {
         labels: painPoints,
-        datasets: [{
-            label: 'Financial Risk ($)',
-            data: Array(painPoints.length).fill(0),
-            backgroundColor: '#F48024'
-        }]
+        datasets: [
+            {
+                label: 'Revenue Loss',
+                data: Array(painPoints.length).fill(0),
+                backgroundColor: '#F48024'
+            },
+            {
+                label: 'QA Cost',
+                data: Array(painPoints.length).fill(0),
+                backgroundColor: '#4A90E2'
+            },
+            {
+                label: 'Support Cost',
+                data: Array(painPoints.length).fill(0),
+                backgroundColor: '#7ED321'
+            },
+            {
+                label: 'Penalty',
+                data: Array(painPoints.length).fill(0),
+                backgroundColor: '#F5A623'
+            }
+        ]
     },
     options: {
         responsive: true,
-        scales: { y: { beginAtZero: true } }
+        scales: { 
+            y: { 
+                beginAtZero: true,
+                stacked: true
+            },
+            x: {
+                stacked: true
+            }
+        },
+        plugins: {
+            tooltip: {
+                mode: 'index',
+                intersect: false
+            }
+        }
     }
 });
+
+let currentChartType = 'stacked';
 
 let latestResults = [];
 
@@ -855,8 +930,7 @@ function calculateRisk() {
     document.getElementById('totalRiskDisplay').innerText = `Total Estimated Financial Risk: $${totalRisk.toLocaleString()}`;
 
     // Update chart
-    riskChart.data.datasets[0].data = chartData;
-    riskChart.update();
+    updateChartData(chartData);
 }
 
 function downloadCSV() {
@@ -882,50 +956,362 @@ function downloadCSV() {
     URL.revokeObjectURL(url);
 }
 
-async function downloadPDF() {
+function downloadPDF() {
     if (latestResults.length === 0) { alert("Calculate first!"); return; }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    doc.setFontSize(18);
-    doc.text("BrowserStack QA Financial Risk Report", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 28);
+        // Set page margins and dimensions
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 20;
+        const contentWidth = pageWidth - (2 * margin);
+        
+        // Header section with professional styling
+        doc.setFillColor(244, 128, 36); // BrowserStack orange
+        doc.rect(0, 0, pageWidth, 40, 'F');
+        
+        // Company logo/name in header
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.text("BrowserStack", margin, 25);
+        
+        // Report title
+        doc.setTextColor(51, 51, 51);
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text("QA Financial Risk Assessment Report", margin, 60);
+        
+        // Report metadata
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(102, 102, 102);
+        doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}`, margin, 75);
+        
+        doc.text(`Report ID: ${Date.now().toString().slice(-8)}`, margin, 85);
+        
+        // Executive Summary section
+        const totalRisk = latestResults.reduce((sum, r) => sum + r.TotalRisk, 0);
+        const avgRisk = totalRisk / latestResults.length;
+        const maxRisk = Math.max(...latestResults.map(r => r.TotalRisk));
+        
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(51, 51, 51);
+        doc.text("Executive Summary", margin, 105);
+        
+        // Summary box
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.rect(margin, 110, contentWidth, 35, 'FD');
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(51, 51, 51);
+        doc.text(`Total Financial Risk: $${totalRisk.toLocaleString()}`, margin + 5, 120);
+        doc.text(`Average Risk per Pain Point: $${avgRisk.toLocaleString()}`, margin + 5, 130);
+        doc.text(`Highest Risk Area: $${maxRisk.toLocaleString()}`, margin + 5, 140);
+        
+        // Chart section
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(51, 51, 51);
+        doc.text("Risk Visualization", margin, 160);
+        
+        // Force chart update and wait for it to render
+        if (riskChart) {
+            riskChart.update('none');
+        }
+        
+        // Use a more reliable method to capture the chart
+        const chartCanvas = document.getElementById('riskChart');
+        
+        // Create a new canvas with proper dimensions
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = chartCanvas.width;
+        tempCanvas.height = chartCanvas.height;
+        
+        // Copy the chart to the temp canvas
+        tempCtx.drawImage(chartCanvas, 0, 0);
+        
+        // Convert to image with higher quality
+        const chartImg = tempCanvas.toDataURL('image/png', 1.0);
+        
+        // Add chart to PDF with better positioning
+        doc.addImage(chartImg, 'PNG', margin, 170, contentWidth, 80);
 
-    // Add chart image
-    const chartCanvas = document.getElementById('riskChart');
-    const chartImg = chartCanvas.toDataURL('image/png', 1.0);
-    doc.addImage(chartImg, 'PNG', 20, 35, 170, 90);
+        // Prepare table data with better formatting
+        const tableColumn = ["Pain Point", "Revenue Loss", "QA Cost", "Support Cost", "Penalty", "Total Risk"];
+        const tableRows = latestResults.map(r => [
+            r.PainPoint,
+            `$${r.RevenueLoss.toLocaleString()}`,
+            `$${r.QACost.toLocaleString()}`,
+            `$${r.SupportCost.toLocaleString()}`,
+            `$${r.Penalty.toLocaleString()}`,
+            `$${r.TotalRisk.toLocaleString()}`
+        ]);
 
-    // Prepare table data
-    const tableColumn = ["Pain Point","Revenue Loss","QA Cost","Support Cost","Penalty","Total Risk"];
-    const tableRows = latestResults.map(r => [
-        r.PainPoint,
-        `$${r.RevenueLoss.toLocaleString()}`,
-        `$${r.QACost.toLocaleString()}`,
-        `$${r.SupportCost.toLocaleString()}`,
-        `$${r.Penalty.toLocaleString()}`,
-        `$${r.TotalRisk.toLocaleString()}`
-    ]);
+                // Force a page break and add heading on new page
+        doc.addPage();
+        
+        // Add heading on the new page
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(51, 51, 51);
+        doc.text("Detailed Risk Analysis", margin, 30);
+        
+        // Enhanced table styling
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 50,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [244, 128, 36], 
+                textColor: 255, 
+                fontStyle: 'bold',
+                fontSize: 10
+            },
+            styles: { 
+                cellPadding: 4, 
+                fontSize: 9,
+                textColor: 51
+            },
+            columnStyles: {
+                0: { cellWidth: 45 }, // Pain Point
+                1: { cellWidth: 25, halign: 'center' }, // Revenue Loss
+                2: { cellWidth: 20, halign: 'center' }, // QA Cost
+                3: { cellWidth: 25, halign: 'center' }, // Support Cost
+                4: { cellWidth: 20, halign: 'center' }, // Penalty
+                5: { cellWidth: 25, halign: 'center' }  // Total Risk
+            },
+            margin: { left: margin, right: margin }
+        });
 
-    // Add table
-    doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 135,
-        theme: 'grid',
-        headStyles: { fillColor: [244, 128, 36], textColor: 255, fontStyle: 'bold' },
-        styles: { cellPadding: 3, fontSize: 10 }
+        // Footer with recommendations
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(51, 51, 51);
+        doc.text("Key Recommendations:", margin, finalY);
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(102, 102, 102);
+        
+        // Find top 3 risk areas
+        const sortedResults = [...latestResults].sort((a, b) => b.TotalRisk - a.TotalRisk);
+        const topRisks = sortedResults.slice(0, 3);
+        
+        let yPos = finalY + 10;
+        topRisks.forEach((risk, index) => {
+            doc.text(`${index + 1}. Focus on "${risk.PainPoint}" - Potential savings: $${risk.TotalRisk.toLocaleString()}`, margin + 5, yPos);
+            yPos += 6;
+        });
+        
+        // Page footer
+        const footerY = doc.internal.pageSize.height - 20;
+        doc.setFontSize(8);
+        doc.setTextColor(153, 153, 153);
+        doc.text("This report was generated by BrowserStack QA Financial Risk Calculator", margin, footerY);
+        doc.text(`Page 1 of 1 | ${new Date().toLocaleDateString()}`, pageWidth - margin - 50, footerY);
+
+        doc.save("browserstack_qa_risk_assessment.pdf");
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+    }
+}
+
+// Chart switching function
+function switchChart(type) {
+    currentChartType = type;
+    
+    // Update toggle button states
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+    event.target.classList.add('active');
+    
+    // Get current data before destroying chart
+    let currentData = [];
+    if (riskChart && riskChart.data && riskChart.data.datasets && riskChart.data.datasets[0]) {
+        currentData = riskChart.data.datasets[0].data;
+    }
+    
+    // Destroy current chart
+    if (riskChart) {
+        riskChart.destroy();
+    }
+    
+    // Create new chart based on type
+    if (type === 'radar') {
+        riskChart = new Chart(document.getElementById('riskChart'), {
+            type: 'radar',
+            data: {
+                labels: painPoints,
+                datasets: [{
+                    label: 'Financial Risk ($)',
+                    data: currentData,
+                    backgroundColor: 'rgba(244, 128, 36, 0.2)',
+                    borderColor: '#F48024',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#F48024',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#F48024'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#374151'
+                        }
+                    }
+                }
+            }
+        });
+    } else if (type === 'stacked') {
+        // Create stacked bar chart with breakdown data
+        let stackedData = [];
+        if (latestResults.length > 0) {
+            stackedData = [
+                {
+                    label: 'Revenue Loss',
+                    data: latestResults.map(r => r.RevenueLoss),
+                    backgroundColor: '#F59E0B'
+                },
+                {
+                    label: 'QA Cost',
+                    data: latestResults.map(r => r.QACost),
+                    backgroundColor: '#10B981'
+                },
+                {
+                    label: 'Support Cost',
+                    data: latestResults.map(r => r.SupportCost),
+                    backgroundColor: '#3B82F6'
+                },
+                {
+                    label: 'Penalty',
+                    data: latestResults.map(r => r.Penalty),
+                    backgroundColor: '#EF4444'
+                }
+            ];
+        } else {
+            // Default empty data structure
+            stackedData = [
+                {
+                    label: 'Revenue Loss',
+                    data: Array(painPoints.length).fill(0),
+                    backgroundColor: '#F59E0B'
+                },
+                {
+                    label: 'QA Cost',
+                    data: Array(painPoints.length).fill(0),
+                    backgroundColor: '#10B981'
+                },
+                {
+                    label: 'Support Cost',
+                    data: Array(painPoints.length).fill(0),
+                    backgroundColor: '#3B82F6'
+                },
+                {
+                    label: 'Penalty',
+                    data: Array(painPoints.length).fill(0),
+                    backgroundColor: '#EF4444'
+                }
+            ];
+        }
+        
+        riskChart = new Chart(document.getElementById('riskChart'), {
+            type: 'bar',
+            data: {
+                labels: painPoints,
+                datasets: stackedData
+            },
+            options: {
+                responsive: true,
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        stacked: true
+                    },
+                    x: {
+                        stacked: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#374151'
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        riskChart = new Chart(document.getElementById('riskChart'), {
+            type: 'bar',
+            data: {
+                labels: painPoints,
+                datasets: [{
+                    label: 'Financial Risk ($)',
+                    data: currentData,
+                    backgroundColor: '#F48024'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+}
 
-    // Add total risk at the bottom
-    const totalRisk = latestResults.reduce((sum, r) => sum + r.TotalRisk, 0);
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Total Estimated Financial Risk: $${totalRisk.toLocaleString()}`, 20, finalY);
-
-    doc.save("financial_risk_report.pdf");
+function updateChartData(chartData) {
+    if (riskChart && chartData) {
+        try {
+            if (currentChartType === 'stacked' && latestResults.length > 0) {
+                // Update stacked bar chart with breakdown data
+                if (riskChart.data.datasets && riskChart.data.datasets.length >= 4) {
+                    riskChart.data.datasets[0].data = latestResults.map(r => r.RevenueLoss);
+                    riskChart.data.datasets[1].data = latestResults.map(r => r.QACost);
+                    riskChart.data.datasets[2].data = latestResults.map(r => r.SupportCost);
+                    riskChart.data.datasets[3].data = latestResults.map(r => r.Penalty);
+                }
+            } else {
+                // Update regular bar or radar chart
+                if (riskChart.data.datasets && riskChart.data.datasets.length > 0) {
+                    riskChart.data.datasets[0].data = chartData;
+                }
+            }
+            riskChart.update();
+        } catch (error) {
+            console.error('Error updating chart:', error);
+        }
+    }
 }
 
 // Modal functions
