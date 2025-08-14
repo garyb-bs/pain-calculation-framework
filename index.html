@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrowserStack QA Financial Risk Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Include jsPDF AutoTable library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* Modern CSS Reset and Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #6d9eeb;
+    color: #1F2937;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+    background: linear-gradient(135deg, #F48024 0%, #EA580C 100%);
+    color: white;
+    padding: 2rem 1rem;
+    box-shadow: 0 4px 20px rgba(244, 128, 36, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.logo {
+    flex-shrink: 0;
+}
+
+.logo img {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.header-text {
+    text-align: left;
+}
+
+.header-text h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
+}
+
+.header-text h2 {
+    font-size: 1.3rem;
+    margin: 0.5rem 0 1rem 0;
+    font-weight: 400;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+.about-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1;
+}
+
+.about-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+
+
+/* Container and Layout */
+.container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.main-layout {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.left-column {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(30, 58, 138, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.right-column .chart-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
+    margin: 0;
+    width: 100%;
+    height: fit-content;
+}
+
+.results-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.results-section table {
+    margin: 0 0 2rem 0;
+}
+
+.results-section .total {
+    margin: 0;
+}
+
+/* Form Styling */
+#riskForm {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin-bottom: 0;
+    backdrop-filter: none;
+    border: none;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: #F9FAFB;
+    color: #1F2937;
+}
+
+input:focus {
+    outline: none;
+    border-color: #F48024;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(244, 128, 36, 0.1);
+    transform: translateY(-1px);
+}
+
+input:hover {
+    border-color: #D1D5DB;
+    background: white;
+}
+
+.weight-input {
+    width: 80px !important;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Button Styling */
+button {
+    background: linear-gradient(135deg, #F48024 0%, #EA580C 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(244, 128, 36, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(244, 128, 36, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Table Styling */
+#resultsTable {
+    width: 100%;
+    margin: 2rem 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
+}
+
+th {
+    background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+    color: white;
+    padding: 1.25rem 1rem;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #F3F4F6;
+    transition: background-color 0.2s ease;
+}
+
+tr:hover td {
+    background-color: #F9FAFB;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Total Risk Display */
+.total {
+    background: linear-gradient(135deg, #F48024 0%, #EA580C 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    text-align: center;
+    margin: 2rem 0;
+    box-shadow: 0 8px 25px rgba(244, 128, 36, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.total::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain2" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain2)"/></svg>');
+    opacity: 0.2;
+}
+
+/* Chart Container */
+.chart-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.08);
+    margin: 2rem 0;
+}
+
+/* Export Buttons */
+.export-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.export-buttons button {
+    flex: 1;
+    min-width: 150px;
+    background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+}
+
+.export-buttons button:hover {
+    box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
+}
+
+/* Weight Inputs Container */
+#weightInputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+#weightInputs label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #F9FAFB;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+#weightInputs label:hover {
+    background: white;
+    border-color: #F48024;
+    box-shadow: 0 2px 8px rgba(244, 128, 36, 0.1);
+}
+
+#weightInputs input {
+    width: 80px;
+    margin: 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .header-text {
+        text-align: center;
+    }
+    
+    .header-text h1 {
+        font-size: 2rem;
+    }
+    
+    .header-text h2 {
+        font-size: 1.1rem;
+    }
+    
+    .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .left-column {
+        padding: 1.5rem;
+    }
+    
+    #riskForm {
+        padding: 0;
+    }
+    
+    #weightInputs {
+        grid-template-columns: 1fr;
+    }
+    
+    .export-buttons {
+        flex-direction: column;
+    }
+    
+    .export-buttons button {
+        min-width: auto;
+    }
+    
+    #resultsTable {
+        font-size: 0.9rem;
+    }
+    
+    th, td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* Animation for form elements */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#riskForm {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.modal-content::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.close {
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    transition: opacity 0.2s ease;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.calculation-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2px solid #F48024;
+}
+
+.calculation-section h3 {
+    color: #1E3A8A;
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.formula {
+    background: #1f2937;
+    color: #fbbf24;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+}
+
+.formula code {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.calculation-section ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.calculation-section li {
+    margin-bottom: 0.5rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.total-section {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 0%);
+    border: 2px solid #f59e0b;
+}
+
+.total-section h3 {
+    color: #92400e;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F3F4F6;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <img src="images/bs-logo.png" alt="BrowserStack Icon" width="40" height="40">
+        </div>
+        <div class="header-text">
+            <h1>BrowserStack QA Financial Risk Calculator</h1>
+            <h2>Estimate potential financial risks from testing inefficiencies</h2>
+            <button class="about-btn" onclick="openAboutModal()">About</button>
+        </div>
+    </div>
+</header>
+
+<!-- About Modal -->
+<div id="aboutModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Financial Risk Calculations</h2>
+            <span class="close" onclick="closeAboutModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="calculation-section">
+                <h3>1. Revenue Loss from Release Delays</h3>
+                <div class="formula">
+                    <strong>Formula:</strong> <code>Loss_release = R_daily × D_release</code>
+                </div>
+                <ul>
+                    <li><strong>Loss_release</strong> represents the revenue loss due to release delays.</li>
+                    <li><strong>R_daily</strong> represents the average revenue per day.</li>
+                    <li><strong>D_release</strong> represents the average release delay in days.</li>
+                </ul>
+            </div>
+
+            <div class="calculation-section">
+                <h3>2. QA Labor Cost Overruns</h3>
+                <div class="formula">
+                    <strong>Formula:</strong> <code>Cost_QA = C_QA × H_extra</code>
+                </div>
+                <ul>
+                    <li><strong>Cost_QA</strong> represents the QA labor cost overruns.</li>
+                    <li><strong>C_QA</strong> represents the QA engineer cost per hour.</li>
+                    <li><strong>H_extra</strong> represents the extra QA hours spent.</li>
+                </ul>
+            </div>
+
+            <div class="calculation-section">
+                <h3>3. Support/Customer Churn Costs</h3>
+                <div class="formula">
+                    <strong>Formula:</strong> <code>Cost_support = C_support × T_unresolved</code>
+                </div>
+                <ul>
+                    <li><strong>Cost_support</strong> represents the support/customer churn costs.</li>
+                    <li><strong>C_support</strong> represents the cost per support ticket.</li>
+                    <li><strong>T_unresolved</strong> represents the number of unresolved tickets.</li>
+                </ul>
+            </div>
+
+            <div class="calculation-section">
+                <h3>4. Regulatory/SLA Penalties</h3>
+                <div class="formula">
+                    <strong>Formula:</strong> <code>Cost_penalty = P_penalty</code>
+                </div>
+                <ul>
+                    <li><strong>Cost_penalty</strong> represents the regulatory/SLA penalties.</li>
+                    <li><strong>P_penalty</strong> represents the total penalty amount.</li>
+                </ul>
+            </div>
+
+            <div class="calculation-section total-section">
+                <h3>Total Financial Risk Estimate</h3>
+                <div class="formula">
+                    <strong>Formula:</strong> <code>Total Risk = Loss_release + Cost_QA + Cost_support + Cost_penalty</code>
+                </div>
+                <p><strong>Total Risk</strong> is the sum of all calculated financial risk components.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="main-layout">
+        <div class="left-column">
+            <form id="riskForm">
+                <div class="form-group">
+                    <label for="R_daily">Average revenue per day ($)</label>
+                    <input type="number" id="R_daily" value="100000">
+                </div>
+
+                <div class="form-group">
+                    <label for="D_release">Average release delay (days)</label>
+                    <input type="number" id="D_release" value="3">
+                </div>
+
+                <div class="form-group">
+                    <label for="C_QA">QA engineer cost per hour ($)</label>
+                    <input type="number" id="C_QA" value="75">
+                </div>
+
+                <div class="form-group">
+                    <label for="H_extra">Extra QA hours spent (hours)</label>
+                    <input type="number" id="H_extra" value="200">
+                </div>
+
+                <div class="form-group">
+                    <label for="C_support">Cost per support ticket ($)</label>
+                    <input type="number" id="C_support" value="50">
+                </div>
+
+                <div class="form-group">
+                    <label for="T_unresolved">Number of tickets due to bugs</label>
+                    <input type="number" id="T_unresolved" value="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="P_penalty">Potential SLA/regulatory penalties ($)</label>
+                    <input type="number" id="P_penalty" value="20000">
+                </div>
+
+                <h3 style="margin: 2rem 0 1rem 0; color: #4a5568; font-size: 1.25rem;">Weightings per Pain Point (%)</h3>
+                <div id="weightInputs"></div>
+
+                <button type="button" onclick="calculateRisk()">Calculate Financial Risk</button>
+            </form>
+        </div>
+
+        <div class="right-column">
+            <div class="results-section">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Pain Point</th>
+                            <th>Revenue Loss</th>
+                            <th>QA Cost</th>
+                            <th>Support Cost</th>
+                            <th>Penalty</th>
+                            <th>Total Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="total" id="totalRiskDisplay">Total Estimated Financial Risk: $0</div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="export-buttons">
+        <button type="button" onclick="downloadCSV()">Download CSV</button>
+        <button type="button" onclick="downloadPDF()">Download PDF</button>
+    </div>
+</div>
+
+<script>
+const painPoints = [
+    "Supporting multiple browsers/devices",
+    "Delays in releases",
+    "High costs for in-house device labs",
+    "Difficulty reproducing bugs",
+    "Limited real-user coverage"
+];
+
+// Generate weight input fields
+const weightDiv = document.getElementById('weightInputs');
+painPoints.forEach((point, i) => {
+    const label = document.createElement('label');
+    label.textContent = point;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = 0;
+    input.max = 100;
+    input.value = 20;
+    input.className = 'weight-input';
+    input.id = 'weight_' + i;
+    label.appendChild(input);
+    weightDiv.appendChild(label);
+});
+
+let riskChart = new Chart(document.getElementById('riskChart'), {
+    type: 'bar',
+    data: {
+        labels: painPoints,
+        datasets: [{
+            label: 'Financial Risk ($)',
+            data: Array(painPoints.length).fill(0),
+            backgroundColor: '#F48024'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+    }
+});
+
+let latestResults = [];
+
+function calculateRisk() {
+    const R_daily = parseFloat(document.getElementById('R_daily').value);
+    const D_release = parseFloat(document.getElementById('D_release').value);
+    const C_QA = parseFloat(document.getElementById('C_QA').value);
+    const H_extra = parseFloat(document.getElementById('H_extra').value);
+    const C_support = parseFloat(document.getElementById('C_support').value);
+    const T_unresolved = parseFloat(document.getElementById('T_unresolved').value);
+    const P_penalty = parseFloat(document.getElementById('P_penalty').value);
+
+    const weights = painPoints.map((_, i) => {
+        const val = parseFloat(document.getElementById('weight_' + i).value);
+        return val / 100;
+    });
+
+    const tbody = document.querySelector("#resultsTable tbody");
+    tbody.innerHTML = "";
+    let totalRisk = 0;
+    const chartData = [];
+    latestResults = [];
+
+    painPoints.forEach((point, index) => {
+        const revenueLoss = R_daily * D_release * weights[index];
+        const qaCost = C_QA * H_extra * weights[index];
+        const supportCost = C_support * T_unresolved * weights[index];
+        const penalty = P_penalty * weights[index];
+        const total = revenueLoss + qaCost + supportCost + penalty;
+        totalRisk += total;
+        chartData.push(total);
+
+        latestResults.push({
+            PainPoint: point,
+            RevenueLoss: revenueLoss,
+            QACost: qaCost,
+            SupportCost: supportCost,
+            Penalty: penalty,
+            TotalRisk: total
+        });
+
+        const row = `<tr>
+            <td>${point}</td>
+            <td>$${revenueLoss.toLocaleString()}</td>
+            <td>$${qaCost.toLocaleString()}</td>
+            <td>$${supportCost.toLocaleString()}</td>
+            <td>$${penalty.toLocaleString()}</td>
+            <td>$${total.toLocaleString()}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+    });
+
+    document.getElementById('totalRiskDisplay').innerText = `Total Estimated Financial Risk: $${totalRisk.toLocaleString()}`;
+
+    // Update chart
+    riskChart.data.datasets[0].data = chartData;
+    riskChart.update();
+}
+
+function downloadCSV() {
+    if (latestResults.length === 0) { alert("Calculate first!"); return; }
+    const rows = [
+        ["Pain Point","Revenue Loss","QA Cost","Support Cost","Penalty","Total Risk"],
+        ...latestResults.map(r => [
+            r.PainPoint,
+            r.RevenueLoss.toFixed(2),
+            r.QACost.toFixed(2),
+            r.SupportCost.toFixed(2),
+            r.Penalty.toFixed(2),
+            r.TotalRisk.toFixed(2)
+        ])
+    ];
+    const csvContent = rows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'financial_risk.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function downloadPDF() {
+    if (latestResults.length === 0) { alert("Calculate first!"); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("BrowserStack QA Financial Risk Report", 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 28);
+
+    // Add chart image
+    const chartCanvas = document.getElementById('riskChart');
+    const chartImg = chartCanvas.toDataURL('image/png', 1.0);
+    doc.addImage(chartImg, 'PNG', 20, 35, 170, 90);
+
+    // Prepare table data
+    const tableColumn = ["Pain Point","Revenue Loss","QA Cost","Support Cost","Penalty","Total Risk"];
+    const tableRows = latestResults.map(r => [
+        r.PainPoint,
+        `$${r.RevenueLoss.toLocaleString()}`,
+        `$${r.QACost.toLocaleString()}`,
+        `$${r.SupportCost.toLocaleString()}`,
+        `$${r.Penalty.toLocaleString()}`,
+        `$${r.TotalRisk.toLocaleString()}`
+    ]);
+
+    // Add table
+    doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 135,
+        theme: 'grid',
+        headStyles: { fillColor: [244, 128, 36], textColor: 255, fontStyle: 'bold' },
+        styles: { cellPadding: 3, fontSize: 10 }
+    });
+
+    // Add total risk at the bottom
+    const totalRisk = latestResults.reduce((sum, r) => sum + r.TotalRisk, 0);
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Estimated Financial Risk: $${totalRisk.toLocaleString()}`, 20, finalY);
+
+    doc.save("financial_risk_report.pdf");
+}
+
+// Modal functions
+function openAboutModal() {
+    document.getElementById('aboutModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAboutModal() {
+    document.getElementById('aboutModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('aboutModal');
+    if (event.target === modal) {
+        closeAboutModal();
+    }
+}
+</script>
+
+</body>
+</html>
